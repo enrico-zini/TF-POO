@@ -1,8 +1,7 @@
+https://www.codejava.net/java-se/swing/editable-jtable-example
 public boolean isCellEditable(int row, int col) {
         return true;
     }
-
-    //https://www.codejava.net/java-se/swing/editable-jtable-example
     public void setValueAt(Object value, int row, int col) {
         Aplicativo aux = aplicativos.getProdutoNaLinha(row);
         if(col == 1)
@@ -11,3 +10,15 @@ public boolean isCellEditable(int row, int col) {
         }
         fireTableCellUpdated(row, col);
     }
+
+https://gist.github.com/nis4273/c01c4e339b557f965797
+table.addMouseListener(new java.awt.event.MouseAdapter() {
+    @Override
+    public void mouseClicked(java.awt.event.MouseEvent evt) {
+        int row = table.rowAtPoint(evt.getPoint());
+        int col = table.columnAtPoint(evt.getPoint());
+        if (row >= 0 && col >= 0) {
+           // TODO: handle cell click
+        }
+    }
+});
