@@ -80,13 +80,10 @@ public class App {
         tabelaClient.addActionListener(e -> toClients());
         JMenuItem tabelaAssin = new JMenuItem("Tabela Assinaturas");
         tabelaAssin.addActionListener(e -> toAssinaturas());
-        JMenuItem cobrancas = new JMenuItem("Cobrancas");
-        cobrancas.addActionListener(e -> cobrar());
         JMenu tabelas = new JMenu("Tabelas");
         tabelas.add(tabelaApp);
         tabelas.add(tabelaClient);
         tabelas.add(tabelaAssin);
-        tabelas.add(cobrancas);
 
         JMenuBar menu = new JMenuBar();
         menu.add(salvo);
