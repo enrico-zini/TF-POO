@@ -393,45 +393,6 @@ public class App {
         catAssinVM.fireTableDataChanged();
     }
 
-    public void cobrar()
-    {
-        List<String> cpfs = new LinkedList<>();
-        List<Integer> codApp = new LinkedList<>();
-        catAssin.getStream().filter(a->a.isAtiva().equals("Ativo")).forEach(a->{
-            cpfs.add(a.getCpfCliente());
-            codApp.add(a.getCodigoApp());
-        });
-        System.out.println(cpfs);
-        System.out.println(codApp);
-
-        List<String> nomes = new LinkedList<>();
-        List<String> emails = new LinkedList<>();
-        for (String cpf : cpfs) {
-            catClientes.getStream().filter(c->c.getCpf().equals(cpf)).forEach(c->{
-                nomes.add(c.getNome());
-                emails.add(c.getEmail());
-            });
-        }
-        System.out.println(nomes);
-        System.out.println(emails);
-
-        List<Double> valores = new LinkedList<>();
-        for (int cod : codApp) {
-            catApps.getStream().filter(ap->ap.getCodigo()==cod).forEach(ap->valores.add(Double.parseDouble(ap.getPreco())));
-        }
-        System.out.println(valores);
-        CatalogoCobranca cobrancas = new CatalogoCobranca();
-        for(int i = 0; i<nomes.size();i++)
-        {
-            String nome = nomes.get(i);
-            String email = emails.get(i);
-            Double valor = valores.get(i);
-            cobrancas.cadastra(new Cobrar(nome, email, valor));
-        }
-        System.out.println(cobrancas);
-        JOptionPane.showMessageDialog(null,cobrancas);
-    }
-
     public static void main(String[] args) throws Exception {
         App app = new App();
         app.criaJanela();
