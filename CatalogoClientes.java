@@ -2,7 +2,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -47,7 +47,7 @@ public class CatalogoClientes {
     }
 
     public void loadFromFile() {
-        Path appsFilePath = Path.of("clientes.dat");
+        Path appsFilePath = Paths.get("clientes.dat");
         try (Stream<String> appsStream = Files.lines(appsFilePath)) {
             appsStream.forEach(str -> clientes.add(Cliente.fromLineFile(str)));
         } catch (IOException e) {
@@ -56,7 +56,7 @@ public class CatalogoClientes {
     }
 
     public void saveToFile() {
-        Path appsFilePath = Path.of("clientes.dat");
+        Path appsFilePath = Paths.get("clientes.dat");
         try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(appsFilePath, StandardCharsets.UTF_8))) {
             for (Cliente app : clientes) {
                 writer.println(app.toLineFile());
