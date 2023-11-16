@@ -3,7 +3,7 @@ import java.awt.FlowLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
-
+import java.util.Calendar;
 import java.util.LinkedList;
 
 import javax.swing.BoxLayout;
@@ -29,7 +29,7 @@ public class App {
     private ClientesViewModel catClienteVM;
     private AssinaturasViewModel catAssinVM;
 
-    private JTextField tfCodigo;
+    private int countApp = 0;
     private JTextField tfNome;
     private JTextField tfPreco;
     private JComboBox<Aplicativo.SO> cbSo;
@@ -38,12 +38,9 @@ public class App {
     private JTextField tfNomeCliente;
     private JTextField tfEmail;
 
-    private JTextField tfCodigoAssin;
+    private int countAssin = 0;
     private JComboBox<Integer> cbCodigoApp;
     private JComboBox<String> cbCpfCliente;
-    private JTextField tfDataInicio;
-    private JTextField tfDataEncerra;
-    private JComboBox<String> cbStatus;
 
     private JButton btAdd;
 
@@ -51,7 +48,12 @@ public class App {
     private Container contentPane2;
     private Container contentPane3;
 
+    private JMenuBar menu;
+
     private JFrame frame;
+
+    private int mes;
+    private int ano;
 
     public App() {
         catApps = new CatalogoAplicativos();
@@ -61,33 +63,27 @@ public class App {
         catApps.loadFromFile();
         catClientes.loadFromFile();
         catAssin.loadFromFile();
-    }
 
-    public void criaJanela() throws Exception {
-        frame = new JFrame("Gestão de aplicativos");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        Calendar data = Calendar.getInstance();
+        mes = data.get(Calendar.MONTH) + 1;
+        ano = data.get(Calendar.YEAR);
 
-        JMenuItem salvar = new JMenuItem("Salvar");
-        salvar.addActionListener(e -> catApps.saveToFile());
-        salvar.addActionListener(e -> catClientes.saveToFile());
-        salvar.addActionListener(e -> catAssin.saveToFile());
-        JMenu salvo = new JMenu("Salvar");
-        salvo.add(salvar);
+        menu = criaMenu();
 
-        JMenuItem tabelaApp = new JMenuItem("Tabela Apps");
-        tabelaApp.addActionListener(e -> toApps());
-        JMenuItem tabelaClient = new JMenuItem("Tabela Clientes");
-        tabelaClient.addActionListener(e -> toClients());
-        JMenuItem tabelaAssin = new JMenuItem("Tabela Assinaturas");
-        tabelaAssin.addActionListener(e -> toAssinaturas());
-        JMenu tabelas = new JMenu("Tabelas");
-        tabelas.add(tabelaApp);
-        tabelas.add(tabelaClient);
-        tabelas.add(tabelaAssin);
+        // atribui valor correto para count para poder auto-encrementar
+        catApps.getStream().forEach(ap -> {
+            if (ap.getCodigo() > countApp) {
+                countApp = ap.getCodigo();
+            }
+        });
+        countApp++;
 
-        JMenuBar menu = new JMenuBar();
-        menu.add(salvo);
-        menu.add(tabelas);
+        catAssin.getStream().forEach(a -> {
+            if (a.getCodigo() > countAssin) {
+                countAssin = a.getCodigo();
+            }
+        });
+        countAssin++;
 
         contentPane1 = new Container();
         contentPane1.setName("tabelaApps");
@@ -103,6 +99,11 @@ public class App {
         contentPane3.setName("tabelaAssinaturas");
         contentPane3.setLayout(new FlowLayout(FlowLayout.LEADING));
         contentPane3.add(criaJanela3());
+    }
+
+    public void criaJanela() throws Exception {
+        frame = new JFrame("Gestão de aplicativos");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         frame.setJMenuBar(menu);
         frame.setContentPane(contentPane1);
@@ -110,6 +111,44 @@ public class App {
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+    }
+
+    public JMenuBar criaMenu() {
+        JMenuItem salvar = new JMenuItem("Salvar");
+        salvar.addActionListener(e -> catApps.saveToFile());
+        salvar.addActionListener(e -> catClientes.saveToFile());
+        salvar.addActionListener(e -> catAssin.saveToFile());
+        JMenu salvo = new JMenu("Arquivo");
+        salvo.add(salvar);
+
+        JMenuItem tabelaApp = new JMenuItem("Tabela Apps");
+        tabelaApp.addActionListener(e -> toApps());
+        JMenuItem tabelaClient = new JMenuItem("Tabela Clientes");
+        tabelaClient.addActionListener(e -> toClients());
+        JMenuItem tabelaAssin = new JMenuItem("Tabela Assinaturas");
+        tabelaAssin.addActionListener(e -> toAssinaturas());
+        JMenuItem cobrancas = new JMenuItem("Cobrancas");
+        cobrancas.addActionListener(e -> cobrar());
+        JMenu tabelas = new JMenu("Tabelas");
+        tabelas.add(tabelaApp);
+        tabelas.add(tabelaClient);
+        tabelas.add(tabelaAssin);
+        tabelas.add(cobrancas);
+
+        JMenuItem rendimentosTotais = new JMenuItem("Rendimentos Totais");
+        rendimentosTotais.addActionListener(e -> rendimentosTotais());
+        JMenuItem rendimentosApps = new JMenuItem("Rendimentos por App");
+        rendimentosApps.addActionListener(e -> rendimentoPorApp());
+        JMenu rendimentos = new JMenu("Rendimentos");
+        rendimentos.add(rendimentosTotais);
+        rendimentos.add(rendimentosApps);
+
+        JMenuBar menu = new JMenuBar();
+        menu.add(salvo);
+        menu.add(tabelas);
+        menu.add(rendimentos);
+
+        return menu;
     }
 
     public void toClients() {
@@ -130,12 +169,13 @@ public class App {
         frame.repaint();
     }
 
-    public Container criaJanela1() {
+    public JPanel criaJanela1() {
         catAppsVM = new AppsViewModel(catApps);
         JTable tabela = new JTable(catAppsVM);
         tabela.setFillsViewportHeight(true);
 
         // https://gist.github.com/nis4273/c01c4e339b557f965797
+        // mostra clientes relacionados ao app
         tabela.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent evt) {
@@ -143,17 +183,18 @@ public class App {
                 int col = tabela.columnAtPoint(evt.getPoint());
                 if (row >= 0 && col == 0) {// quando clicar em algum codigo
                     int codigoApp = (Integer) tabela.getValueAt(row, col);// pega o codigo
-                    List<String> listCPF = new LinkedList<>();
-                    // ve nas assinaturas e pega apenas as que possuem o codigo e poe o cpf em uma lista
-                    catAssin.getStream().filter(a -> a.getCodigoApp() == codigoApp).forEach(a -> listCPF.add(a.getCpfCliente()));
                     CatalogoClientes catClientesRel = new CatalogoClientes();
-                    for (String cpf : listCPF) {// cria um novo catalogo so com os clietes dos cpfs
-                        catClientes.getStream().filter(c -> c.getCpf().equals(cpf)).forEach(a -> catClientesRel.cadastra(a));
-                    }
+                    // para cada assinatura ativa com o codigo do aplicativo
+                    catAssin.getStream().filter(a -> a.isAtiva().equals("Ativo"))
+                            .filter(a -> a.getCodigoApp() == codigoApp).forEach(a -> {
+                                // pega o cliente relacionado ao cpf e cadastra em nova tabela
+                                catClientes.getStream().filter(c -> c.getCpf().equals(a.getCpfCliente()))
+                                        .forEach(c -> catClientesRel.cadastra(c));
+                            });
                     ClientesViewModel aux = new ClientesViewModel(catClientesRel);
                     JTable aux2 = new JTable(aux);
                     JScrollPane sp = new JScrollPane(aux2);
-                    JOptionPane.showMessageDialog(null, sp);
+                    JOptionPane.showMessageDialog(null, sp, "Clientes", JOptionPane.PLAIN_MESSAGE);
                 }
             }
         });
@@ -170,12 +211,13 @@ public class App {
         return tabelaApps;
     }
 
-    public JPanel criaJanela2() throws Exception {
+    public JPanel criaJanela2() {
         catClienteVM = new ClientesViewModel(catClientes);
         JTable tabela = new JTable(catClienteVM);
         tabela.setFillsViewportHeight(true);
 
         // https://gist.github.com/nis4273/c01c4e339b557f965797
+        // mostra assinaturas relacionadas ao cliente
         tabela.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent evt) {
@@ -184,18 +226,21 @@ public class App {
                 if (row >= 0 && col == 0) {// quando clicar em algum cpf
                     String cpf = (String) tabela.getValueAt(row, col);
                     CatalogoAssinatura catAssinR = new CatalogoAssinatura();
-                    catAssin.getStream().filter(a -> a.getCpfCliente().equals(cpf)).forEach(a -> catAssinR.cadastra(a));
+                    catAssin.getStream().filter(a -> a.getCpfCliente().equals(cpf))
+                            .filter(a -> a.isAtiva().equals("Ativo"))
+                            .forEach(a -> catAssinR.cadastra(a));
                     AssinaturasViewModel aux = new AssinaturasViewModel(catAssinR);
                     JTable aux2 = new JTable(aux);
                     JScrollPane sp = new JScrollPane(aux2);
-                    JOptionPane.showMessageDialog(null, sp);
+                    JOptionPane.showMessageDialog(null, sp, "Assinaturas", JOptionPane.PLAIN_MESSAGE);
                 }
             }
         });
 
         JPanel tabelaClientes = new JPanel(new FlowLayout(FlowLayout.LEADING));
         tabelaClientes.setLayout(new BoxLayout(tabelaClientes, BoxLayout.PAGE_AXIS));
-        JScrollPane scrollPane = new JScrollPane(tabela, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+        JScrollPane scrollPane = new JScrollPane(tabela, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
+                JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
         tabelaClientes.add(scrollPane);
 
         JPanel novoCliente = criaPainelNovoCliente();
@@ -205,7 +250,7 @@ public class App {
         return tabelaClientes;
     }
 
-    public JPanel criaJanela3() throws Exception {
+    public JPanel criaJanela3() {
         catAssinVM = new AssinaturasViewModel(catAssin);
         JTable tabela = new JTable(catAssinVM);
         tabela.setFillsViewportHeight(true);
@@ -228,9 +273,6 @@ public class App {
         painel.setLayout(new BoxLayout(painel, BoxLayout.PAGE_AXIS));
 
         JPanel linha1 = new JPanel(new FlowLayout(FlowLayout.LEADING));
-        linha1.add(new JLabel("Codigo"));
-        tfCodigo = new JTextField(10);
-        linha1.add(tfCodigo);
         linha1.add(new JLabel("Nome"));
         tfNome = new JTextField(20);
         linha1.add(tfNome);
@@ -268,6 +310,7 @@ public class App {
         linha1.add(new JLabel("Nome"));
         tfNomeCliente = new JTextField(20);
         linha1.add(tfNomeCliente);
+
         JPanel linha2 = new JPanel(new FlowLayout(FlowLayout.LEADING));
         linha2.add(new JLabel("Email"));
         tfEmail = new JTextField(10);
@@ -293,11 +336,6 @@ public class App {
         painel.setLayout(new BoxLayout(painel, BoxLayout.PAGE_AXIS));
 
         JPanel linha1 = new JPanel(new FlowLayout(FlowLayout.LEADING));
-        linha1.add(new JLabel("Codigo"));
-
-        tfCodigoAssin = new JTextField(10);
-        linha1.add(tfCodigoAssin);
-
         linha1.add(new JLabel("Codigo do App"));
         cbCodigoApp = new JComboBox<>();
         catApps.getStream().forEach(a -> cbCodigoApp.addItem(a.getCodigo()));
@@ -309,29 +347,14 @@ public class App {
         linha1.add(cbCpfCliente);
 
         JPanel linha2 = new JPanel(new FlowLayout(FlowLayout.LEADING));
-        linha2.add(new JLabel("Data Inicio"));
-        tfDataInicio = new JTextField(5);
-        linha2.add(tfDataInicio);
-
-        linha2.add(new JLabel("Data Encerramento"));
-        tfDataEncerra = new JTextField(5);
-        linha2.add(tfDataEncerra);
-
-        cbStatus = new JComboBox<>();
-        cbStatus.addItem("Ativo");
-        cbStatus.addItem("Inativo");
-        linha2.add(cbStatus);
-
-        JPanel linha3 = new JPanel(new FlowLayout(FlowLayout.LEADING));
-
-        JTextField tf = new JTextField("Codigo");
-        JButton delete = new JButton("Remove");
-        delete.addActionListener(e -> cancelaAssinatura(Integer.valueOf(tf.getText())));
-
         btAdd = new JButton("Nova Assinatura");
         btAdd.addActionListener(e -> adicionaAssinatura());
+        linha2.add(btAdd);
 
-        linha3.add(btAdd);
+        JPanel linha3 = new JPanel(new FlowLayout(FlowLayout.LEADING));
+        JTextField tf = new JTextField("Codigo");
+        JButton delete = new JButton("Cancela");
+        delete.addActionListener(e -> cancelaAssinatura(Integer.valueOf(tf.getText())));
         linha3.add(delete);
         linha3.add(tf);
 
@@ -342,7 +365,7 @@ public class App {
     }
 
     public void adicionaApp() {
-        int codigo = Integer.parseInt(tfCodigo.getText());
+        int codigo = countApp;
         String nome = tfNome.getText();
         String preco = tfPreco.getText();
         Aplicativo.SO so = (Aplicativo.SO) cbSo.getSelectedItem();
@@ -350,6 +373,7 @@ public class App {
         catApps.cadastra(novo);
         catAppsVM.fireTableDataChanged();
         cbCodigoApp.addItem(codigo);
+        countApp++;
     }
 
     public void adicionaCliente() {
@@ -363,31 +387,108 @@ public class App {
     }
 
     public void adicionaAssinatura() {
-        int codigo = Integer.parseInt(tfCodigoAssin.getText());
+        int codigo = countAssin;
         int codigoApp = (Integer) cbCodigoApp.getSelectedItem();
         String cpf = cbCpfCliente.getSelectedItem().toString();
-        String dataInicio = tfDataInicio.getText();
-        String dataEncerra = tfDataEncerra.getText();
-        String status = cbStatus.getSelectedItem().toString();
+        String dataInicio = mes + "/" + ano;
+        String dataEncerra = "00/00";
+        String status = "Ativo";
 
         Assinatura novo = new Assinatura(codigo, codigoApp, cpf, dataInicio, dataEncerra, status);
         catAssin.cadastra(novo);
         catAssinVM.fireTableDataChanged();
+        countAssin++;
     }
 
     public void cancelaApp(int codigo) {
         catApps.remove(codigo);
         catAppsVM.fireTableDataChanged();
+        catAssin.getStream().filter(a -> a.getCodigoApp() == codigo).forEach(a -> cancelaAssinatura(a.getCodigo()));
     }
 
     public void cancelaCliente(String cpf) {
         catClientes.remove(cpf);
         catClienteVM.fireTableDataChanged();
+        catAssin.getStream().filter(a -> a.getCpfCliente().equals(cpf)).forEach(a -> cancelaAssinatura(a.getCodigo()));
     }
 
     public void cancelaAssinatura(int codigo) {
-        catAssin.remove(codigo);
+        catAssin.getStream().filter(a -> a.getCodigo() == codigo).forEach(a -> {
+            a.setAtiva("Inativo");
+            a.setDataEncerra(mes + "/" + ano);
+        });
         catAssinVM.fireTableDataChanged();
+    }
+
+    public void cobrar() {
+        CatalogoCobranca cobrancas = new CatalogoCobranca();
+        //para cada cliente
+        catClientes.getStream().forEach(c -> {
+            //pega as assinaturas ativas relacionadas ao cliente
+            catAssin.getStream().filter(a -> a.getCpfCliente().equals(c.getCpf()) && a.isAtiva().equals("Ativo"))
+                    .forEach(a -> {
+                        //soma os valores dos aplicativos relacionados nessas assinaturas
+                        Double sum = catApps.getStream().filter(ap -> ap.getCodigo() == a.getCodigoApp()).toList()
+                                .stream().mapToDouble(d -> Double.parseDouble(d.getPreco())).sum();
+                        //cadastra nova cobranca com o valor da soma
+                        cobrancas.cadastra(new Cobranca(c.getNome(), c.getEmail(), sum));
+                    });
+        });
+        CobrancasViewModel cVM = new CobrancasViewModel(cobrancas);
+        JTable aux2 = new JTable(cVM);
+        JScrollPane sp = new JScrollPane(aux2);
+        JOptionPane.showMessageDialog(null, sp, "Cobrancas", JOptionPane.PLAIN_MESSAGE);
+    }
+
+    public Double rendimentoPorSO(Aplicativo.SO so) {
+        List<Aplicativo> apps = new LinkedList<>();
+        //pega as assinaturas ativa
+        catAssin.getStream().filter(a->a.isAtiva().equals("Ativo")).forEach(a -> {
+            //soma os valores dos aplicativos relacionados a assinatura
+            catApps.getStream().filter(ap -> ap.getCodigo()==a.getCodigoApp()).filter(ap -> ap.getSo().equals(so)).forEach(ap -> apps.add(ap));
+        });
+        Double sum = apps.stream().mapToDouble(d -> Double.parseDouble(d.getPreco())).sum();
+        return sum;
+    }
+
+    public void rendimentosTotais() {
+        JPanel painel = new JPanel();
+        painel.setLayout(new BoxLayout(painel, BoxLayout.PAGE_AXIS));
+
+        Double rIOS = rendimentoPorSO(Aplicativo.SO.IOS);
+        Double rAndroid = rendimentoPorSO(Aplicativo.SO.Android);
+
+        JPanel linha1 = new JPanel(new FlowLayout(FlowLayout.LEADING));
+        linha1.add(new JLabel("IOS: " + rIOS));
+
+        JPanel linha2 = new JPanel(new FlowLayout(FlowLayout.LEADING));
+        linha2.add(new JLabel("Android: " + rAndroid));
+
+        JPanel linha3 = new JPanel(new FlowLayout(FlowLayout.LEADING));
+        linha3.add(new JLabel("Total: " + (rAndroid + rIOS)));
+
+        painel.add(linha1);
+        painel.add(linha2);
+        painel.add(linha3);
+
+        JOptionPane.showMessageDialog(null, painel, "Rendimentos Totais", JOptionPane.PLAIN_MESSAGE);
+    }
+
+    public void rendimentoPorApp() {
+        // cria painel
+        JPanel painel = new JPanel();
+        painel.setLayout(new BoxLayout(painel, BoxLayout.PAGE_AXIS));
+        catApps.getStream().forEach(ap -> {
+            // verifica dentre as assinaturas ativas se app se repete
+            List<Integer> repetidos = new LinkedList<>();
+            catAssin.getStream().filter(a -> a.getCodigoApp() == ap.getCodigo() && a.isAtiva().equals("Ativo"))
+                    .forEach(a -> repetidos.add(a.getCodigoApp()));
+            // multipica preco pelo numero de repeticoes
+            Double valor = Double.parseDouble(ap.getPreco()) * repetidos.size();
+            // adiciona no painel o nome e o valor total
+            painel.add(new JLabel(ap.getNome() + ": " + valor));
+        });
+        JOptionPane.showMessageDialog(null, painel, "Rendimentos por App", JOptionPane.PLAIN_MESSAGE);
     }
 
     public static void main(String[] args) throws Exception {
@@ -395,3 +496,4 @@ public class App {
         app.criaJanela();
     }
 }
+
