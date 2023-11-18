@@ -72,19 +72,11 @@ public class App {
 
         menu = criaMenu();
 
-        // atribui valor correto para count para poder auto-encrementar
-        catApps.getStream().forEach(ap -> {
-            if (ap.getCodigo() > countApp) {
-                countApp = ap.getCodigo();
-            }
-        });
+        //atribui valor correto para count para poder auto-encrementar
+        countApp = catApps.getStream().mapToInt(i -> i.getCodigo()).max().getAsInt();
         countApp++;
 
-        catAssin.getStream().forEach(a -> {
-            if (a.getCodigo() > countAssin) {
-                countAssin = a.getCodigo();
-            }
-        });
+        countAssin = catAssin.getStream().mapToInt(i -> i.getCodigo()).max().getAsInt();
         countAssin++;
 
         contentPane1 = new Container();
