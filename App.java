@@ -51,10 +51,11 @@ public class App {
     private JMenuBar menu;
 
     private JFrame frame;
-
+    
+    private int dia;
     private int mes;
     private int ano;
-
+    
     public App() {
         catApps = new CatalogoAplicativos();
         catClientes = new CatalogoClientes();
@@ -67,6 +68,7 @@ public class App {
         Calendar data = Calendar.getInstance();
         mes = data.get(Calendar.MONTH) + 1;
         ano = data.get(Calendar.YEAR);
+        dia = data.get(Calendar.DAY_OF_MONTH);
 
         menu = criaMenu();
 
@@ -151,14 +153,14 @@ public class App {
         return menu;
     }
 
-    public void toClients() {
-        frame.setContentPane(contentPane2);
+    public void toApps() {
+        frame.setContentPane(contentPane1);
         frame.revalidate();
         frame.repaint();
     }
-
-    public void toApps() {
-        frame.setContentPane(contentPane1);
+    
+    public void toClients() {
+        frame.setContentPane(contentPane2);
         frame.revalidate();
         frame.repaint();
     }
@@ -184,7 +186,7 @@ public class App {
                 if (row >= 0 && col == 0) {// quando clicar em algum codigo
                     int codigoApp = (Integer) tabela.getValueAt(row, col);// pega o codigo
                     CatalogoClientes catClientesRel = new CatalogoClientes();
-                    // para cada assinatura ativa com o codigo do aplicativo
+                    //para cada assinatura ativa com o codigo do aplicativo
                     catAssin.getStream().filter(a -> a.isAtiva().equals("Ativo"))
                             .filter(a -> a.getCodigoApp() == codigoApp).forEach(a -> {
                                 // pega o cliente relacionado ao cpf e cadastra em nova tabela
@@ -390,7 +392,7 @@ public class App {
         int codigo = countAssin;
         int codigoApp = (Integer) cbCodigoApp.getSelectedItem();
         String cpf = cbCpfCliente.getSelectedItem().toString();
-        String dataInicio = mes + "/" + ano;
+        String dataInicio = dia + "/" + mes + "/" + ano;
         String dataEncerra = "00/00";
         String status = "Ativo";
 
@@ -415,7 +417,7 @@ public class App {
     public void cancelaAssinatura(int codigo) {
         catAssin.getStream().filter(a -> a.getCodigo() == codigo).forEach(a -> {
             a.setAtiva("Inativo");
-            a.setDataEncerra(mes + "/" + ano);
+            a.setDataEncerra(dia + "/" + mes + "/" + ano);
         });
         catAssinVM.fireTableDataChanged();
     }
