@@ -426,14 +426,14 @@ public class App {
         CatalogoCobranca cobrancas = new CatalogoCobranca();
         //para cada cliente
         catClientes.getStream().forEach(c -> {
-            //pega as assinaturas ativas relacionadas ao cliente
+            // pega as assinaturas ativas relacionadas ao cliente
             catAssin.getStream().filter(a -> a.getCpfCliente().equals(c.getCpf()) && a.isAtiva().equals("Ativo"))
                     .forEach(a -> {
-                        //soma os valores dos aplicativos relacionados nessas assinaturas
-                        Double sum = catApps.getStream().filter(ap -> ap.getCodigo() == a.getCodigoApp()).toList()
-                                .stream().mapToDouble(d -> Double.parseDouble(d.getPreco())).sum();
-                        //cadastra nova cobranca com o valor da soma
-                        cobrancas.cadastra(new Cobranca(c.getNome(), c.getEmail(), sum));
+                        // pega o valor do app relaciondo a esta assinatura
+                        Double valor = Double.parseDouble(catApps.getStream()
+                                .filter(ap -> ap.getCodigo() == a.getCodigoApp()).findAny().get().getPreco());
+                        // cadastra nova cobranca com o valor
+                        cobrancas.cadastra(new Cobranca(c.getNome(), c.getEmail(), valor));
                     });
         });
         CobrancasViewModel cVM = new CobrancasViewModel(cobrancas);
